@@ -1,0 +1,22 @@
+{
+  "name": "cardmath-backend",
+  "version": "1.0.0",
+  "description": "Backend for CardMath - simple Socket.IO server for 2-player games",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js",
+    "test": "mocha --exit"
+  },
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "cors": "^2.8.5",
+    "express": "^4.18.2",
+    "socket.io": "^4.7.1"
+  },
+  "devDependencies": {
+    "chai": "^4.3.7",
+    "mocha": "^10.2.0"
+  }
+  
+}
