@@ -1,20 +1,30 @@
+require('dotenv').config();
+
 const express = require('express');
 const http = require('http');
 const { Server } = require('socket.io');
 const cors = require('cors');
 
+// CORS configuration - easily switch between development and production
+const ALLOWED_ORIGINS = process.env.ALLOWED_ORIGINS 
+  ? process.env.ALLOWED_ORIGINS.split(',')
+  : ['*']; // Allow all origins in development
+
+const corsOptions = {
+  origin: ALLOWED_ORIGINS.includes('*') ? '*' : ALLOWED_ORIGINS,
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS']
+};
+
 const app = express();
-app.use(cors());
+app.use(cors(corsOptions));
 app.use(express.json());
 
 const server = http.createServer(app);
 
-// Allow Socket.IO from any origin (adjust in production)
+// Socket.IO with same CORS settings
 const io = new Server(server, {
-  cors: {
-    origin: '*',
-    methods: ['GET', 'POST']
-  }
+  cors: corsOptions
 });
 
 const PORT = process.env.PORT || 3000;
@@ -718,6 +728,46 @@ app.get('/rooms/:id/state', (req, res) => {
   res.json({ state });
 });
 
+// Admin dashboard endpoint - returns detailed room statistics
+app.get('/api/rooms', (req, res) => {
+  const rooms = roomManager.listRooms();
+  const now = Date.now();
+  
+  const roomsWithStats = rooms.map(room => {
+    const roomData = roomManager.getRoom(room.roomId);
+    const createdAt = roomData?.createdAt || now;
+    const lastActivity = roomData?.lastActivity || createdAt;
+    const age = now - createdAt;
+    
+    return {
+      roomId: room.roomId,
+      playerCount: room.playersPresent?.length || 0,
+      players: room.playersPresent || [],
+      createdAt,
+      lastActivity,
+      age
+    };
+  });
+
+  // Calculate statistics
+  const totalRooms = roomsWithStats.length;
+  const totalPlayers = roomsWithStats.reduce((sum, room) => sum + room.playerCount, 0);
+  const emptyRooms = roomsWithStats.filter(room => room.playerCount === 0).length;
+  const oldRooms = roomsWithStats.filter(room => room.age >= 10 * 60 * 1000).length;
+
+  res.json({
+    totalRooms,
+    totalPlayers,
+    emptyRooms,
+    oldRooms,
+    rooms: roomsWithStats.sort((a, b) => b.createdAt - a.createdAt) // Sort by newest first
+  });
+});
+
+// Serve the admin dashboard HTML
+app.use('/admin', express.static('public'));
+
 server.listen(PORT, () => {
   console.log(`CardMath backend listening on http://localhost:${PORT}`);
+  console.log(`Admin dashboard available at http://localhost:${PORT}/admin/admin.html`);
 });

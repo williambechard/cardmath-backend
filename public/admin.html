@@ -1,0 +1,383 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CardMath Backend - Admin Dashboard</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .header {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            margin-bottom: 30px;
+        }
+
+        h1 {
+            color: #667eea;
+            font-size: 2em;
+            margin-bottom: 10px;
+        }
+
+        .stats-overview {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .stat-card {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            text-align: center;
+        }
+
+        .stat-value {
+            font-size: 3em;
+            font-weight: bold;
+            color: #667eea;
+            margin-bottom: 5px;
+        }
+
+        .stat-label {
+            color: #666;
+            font-size: 0.9em;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .rooms-container {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+
+        .rooms-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .rooms-header h2 {
+            color: #333;
+        }
+
+        .refresh-btn {
+            background: #667eea;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 1em;
+            transition: background 0.3s;
+        }
+
+        .refresh-btn:hover {
+            background: #5568d3;
+        }
+
+        .room-card {
+            background: #f8f9fa;
+            border-left: 4px solid #667eea;
+            padding: 20px;
+            margin-bottom: 15px;
+            border-radius: 5px;
+            transition: transform 0.2s;
+        }
+
+        .room-card:hover {
+            transform: translateX(5px);
+        }
+
+        .room-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+
+        .room-id {
+            font-weight: bold;
+            color: #667eea;
+            font-size: 1.2em;
+        }
+
+        .room-age {
+            color: #666;
+            font-size: 0.9em;
+        }
+
+        .room-age.warning {
+            color: #ff6b6b;
+            font-weight: bold;
+        }
+
+        .room-details {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 15px;
+        }
+
+        .room-detail {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .detail-label {
+            color: #666;
+            font-size: 0.85em;
+            margin-bottom: 5px;
+        }
+
+        .detail-value {
+            color: #333;
+            font-weight: 600;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 60px 20px;
+            color: #999;
+        }
+
+        .empty-state-icon {
+            font-size: 4em;
+            margin-bottom: 20px;
+        }
+
+        .last-updated {
+            text-align: center;
+            color: #666;
+            margin-top: 20px;
+            font-size: 0.9em;
+        }
+
+        .player-list {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .player-badge {
+            background: #667eea;
+            color: white;
+            padding: 5px 12px;
+            border-radius: 20px;
+            font-size: 0.85em;
+        }
+
+        .auto-refresh {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            color: #666;
+        }
+
+        .auto-refresh input[type="checkbox"] {
+            width: 20px;
+            height: 20px;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🎮 CardMath Backend Monitor</h1>
+            <p>Real-time room and player monitoring</p>
+        </div>
+
+        <div class="stats-overview">
+            <div class="stat-card">
+                <div class="stat-value" id="total-rooms">0</div>
+                <div class="stat-label">Active Rooms</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value" id="total-players">0</div>
+                <div class="stat-label">Total Players</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value" id="empty-rooms">0</div>
+                <div class="stat-label">Empty Rooms</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value" id="old-rooms">0</div>
+                <div class="stat-label">Old Rooms (>10min)</div>
+            </div>
+        </div>
+
+        <div class="rooms-container">
+            <div class="rooms-header">
+                <h2>Active Rooms</h2>
+                <div style="display: flex; gap: 15px; align-items: center;">
+                    <div class="auto-refresh">
+                        <input type="checkbox" id="auto-refresh" checked>
+                        <label for="auto-refresh">Auto-refresh (5s)</label>
+                    </div>
+                    <button class="refresh-btn" onclick="loadRooms()">🔄 Refresh</button>
+                </div>
+            </div>
+            <div id="rooms-list">
+                <div class="empty-state">
+                    <div class="empty-state-icon">⏳</div>
+                    <p>Loading rooms...</p>
+                </div>
+            </div>
+            <div class="last-updated" id="last-updated"></div>
+        </div>
+    </div>
+
+    <script>
+        let autoRefreshInterval;
+
+        function formatDuration(ms) {
+            const seconds = Math.floor(ms / 1000);
+            const minutes = Math.floor(seconds / 60);
+            const hours = Math.floor(minutes / 60);
+
+            if (hours > 0) {
+                return `${hours}h ${minutes % 60}m`;
+            } else if (minutes > 0) {
+                return `${minutes}m ${seconds % 60}s`;
+            } else {
+                return `${seconds}s`;
+            }
+        }
+
+        function formatTime(timestamp) {
+            return new Date(timestamp).toLocaleTimeString();
+        }
+
+        async function loadRooms() {
+            try {
+                const response = await fetch('/api/rooms');
+                const data = await response.json();
+
+                // Update stats
+                document.getElementById('total-rooms').textContent = data.totalRooms;
+                document.getElementById('total-players').textContent = data.totalPlayers;
+                document.getElementById('empty-rooms').textContent = data.emptyRooms;
+                document.getElementById('old-rooms').textContent = data.oldRooms;
+
+                // Update rooms list
+                const roomsList = document.getElementById('rooms-list');
+                
+                if (data.rooms.length === 0) {
+                    roomsList.innerHTML = `
+                        <div class="empty-state">
+                            <div class="empty-state-icon">🎲</div>
+                            <p>No active rooms</p>
+                        </div>
+                    `;
+                } else {
+                    roomsList.innerHTML = data.rooms.map(room => {
+                        const ageMinutes = Math.floor(room.age / 60000);
+                        const ageClass = ageMinutes >= 10 ? 'warning' : '';
+                        
+                        return `
+                            <div class="room-card">
+                                <div class="room-header">
+                                    <div class="room-id">Room: ${room.roomId}</div>
+                                    <div class="room-age ${ageClass}">
+                                        Active for: ${formatDuration(room.age)}
+                                        ${ageMinutes >= 10 ? '⚠️' : ''}
+                                    </div>
+                                </div>
+                                <div class="room-details">
+                                    <div class="room-detail">
+                                        <div class="detail-label">Players</div>
+                                        <div class="detail-value">${room.playerCount} / 2</div>
+                                    </div>
+                                    <div class="room-detail">
+                                        <div class="detail-label">Created</div>
+                                        <div class="detail-value">${formatTime(room.createdAt)}</div>
+                                    </div>
+                                    <div class="room-detail">
+                                        <div class="detail-label">Last Activity</div>
+                                        <div class="detail-value">${formatTime(room.lastActivity)}</div>
+                                    </div>
+                                    <div class="room-detail">
+                                        <div class="detail-label">Status</div>
+                                        <div class="detail-value">
+                                            ${room.playerCount === 0 ? '⚠️ Empty' : 
+                                              room.playerCount === 2 ? '✅ Full' : '🟡 Waiting'}
+                                        </div>
+                                    </div>
+                                </div>
+                                ${room.players.length > 0 ? `
+                                    <div style="margin-top: 15px;">
+                                        <div class="detail-label">Connected Players:</div>
+                                        <div class="player-list" style="margin-top: 8px;">
+                                            ${room.players.map(p => 
+                                                `<span class="player-badge">Player ${p}</span>`
+                                            ).join('')}
+                                        </div>
+                                    </div>
+                                ` : ''}
+                            </div>
+                        `;
+                    }).join('');
+                }
+
+                // Update timestamp
+                document.getElementById('last-updated').textContent = 
+                    `Last updated: ${new Date().toLocaleTimeString()}`;
+
+            } catch (error) {
+                console.error('Error loading rooms:', error);
+                document.getElementById('rooms-list').innerHTML = `
+                    <div class="empty-state">
+                        <div class="empty-state-icon">❌</div>
+                        <p>Error loading rooms. Please try again.</p>
+                    </div>
+                `;
+            }
+        }
+
+        // Auto-refresh functionality
+        function setupAutoRefresh() {
+            const checkbox = document.getElementById('auto-refresh');
+            
+            function updateAutoRefresh() {
+                if (autoRefreshInterval) {
+                    clearInterval(autoRefreshInterval);
+                }
+                
+                if (checkbox.checked) {
+                    autoRefreshInterval = setInterval(loadRooms, 5000);
+                }
+            }
+
+            checkbox.addEventListener('change', updateAutoRefresh);
+            updateAutoRefresh();
+        }
+
+        // Initial load
+        loadRooms();
+        setupAutoRefresh();
+    </script>
+</body>
+</html>
